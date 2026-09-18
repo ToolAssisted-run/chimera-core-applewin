@@ -243,6 +243,11 @@ else
     cpp_args: ['-I' + mb / 'source/guest/include', '-I' + mb / 'extern/jsmn'],
     dependencies: [m])
 
+  # the write overlay behind the Win32 file API, on its own (run-gate.sh runs it)
+  executable('test-fileapi', files('waterbox/tests/test-fileapi.cpp',
+      'waterbox/libwindows/fileapi.cpp', 'waterbox/libwindows/winhandles.cpp'),
+    include_directories: include_directories('waterbox/libwindows'))
+
   mbhost = mb / 'build/meson-linux/source/host'
   executable('run-wbx', files('waterbox/run-wbx.c'),
     c_args: ['-I' + mb / 'source/host'],

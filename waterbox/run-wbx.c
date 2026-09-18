@@ -279,6 +279,8 @@ int main(int argc, char **argv)
 
 	c.init = core_init_done;
 	int ret = gate_run(&c, &o);
+	if (g_rerecord || g_session)
+		fprintf(stderr, "stateBytes=%zu\n", g_state.len);
 
 	wbx_deactivate_host(g_host, &r);
 	wbx_destroy_host(g_host, &r);

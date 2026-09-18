@@ -60,6 +60,7 @@ struct gate_opts
 	const char *dumpDomain;     /* optional: memory domain to dump after the run... */
 	const char *dumpPath;       /* ...into this file (the frontend gate compares it) */
 	const char *textOut;        /* optional: the 40-column text page as text, after the run */
+	const char *audioOut;       /* optional: every frame's samples appended here, raw s16 stereo */
 	long swapDiskAt;            /* >0: press Next Disk 1 on this frame */
 	long resetAt;               /* >0: press Reset on this frame (a IIe with no disk boots forever) */
 	int turbo;            /* nonzero: draw nothing for the first half of the run */
@@ -223,6 +224,11 @@ static int gate_run(const struct gate_core *c, const struct gate_opts *o)
 			th = gate_fnv(th, video, (size_t)w * h * 4);
 		}
 		ah = gate_fnv(ah, audio, (size_t)n * 2 * sizeof(int16_t));
+		if (o->audioOut)
+		{
+			FILE *af = fopen(o->audioOut, f == 0 ? "wb" : "ab");
+			if (af) { fwrite(audio, 2 * sizeof(int16_t), (size_t)n, af); fclose(af); }
+		}
 		if (!c->input_was_read())
 			lag++;
 		if (o->screenshotPath && f == frames - 1)
@@ -308,6 +314,7 @@ static int gate_parse_opts(int argc, char **argv, int first, struct gate_opts *o
 	o->dumpDomain = NULL;
 	o->dumpPath = NULL;
 	o->textOut = NULL;
+	o->audioOut = NULL;
 	o->swapDiskAt = 0;
 	o->resetAt = 0;
 	o->turbo = 0;
@@ -322,6 +329,7 @@ static int gate_parse_opts(int argc, char **argv, int first, struct gate_opts *o
 		else if (!strcmp(argv[i], "--exercise")) o->exercise = 1;
 		else if (!strcmp(argv[i], "--dump-domain") && i + 2 < argc) { o->dumpDomain = argv[++i]; o->dumpPath = argv[++i]; }
 		else if (!strcmp(argv[i], "--text") && i + 1 < argc) o->textOut = argv[++i];
+		else if (!strcmp(argv[i], "--audio") && i + 1 < argc) o->audioOut = argv[++i];
 		else if (!strcmp(argv[i], "--swap-disk-at") && i + 1 < argc) o->swapDiskAt = strtol(argv[++i], 0, 0);
 		else if (!strcmp(argv[i], "--reset-at") && i + 1 < argc) o->resetAt = strtol(argv[++i], 0, 0);
 		else if (!strcmp(argv[i], "--turbo")) o->turbo = 1;

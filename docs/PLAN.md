@@ -86,20 +86,86 @@ and `ContinueExecution()` do, with the 6502 as the only clock:
   unmodified, boots an enhanced //e to the Applesoft prompt, types
   `PRINT 1+1` and gets `2`, and boots a real Disk II image. ~740 fps on
   this machine.
+- **M2 DONE** (2026-09-18): the guest builds from the same sources (first
+  try; no TLS, no threads to remove), and the gates are green.
+  - `waterbox/run-gate.sh`: 34/34. The wire check (config == driver enum),
+    the file-overlay unit test, and six machines - the ROM alone typing a
+    two-line Applesoft program and reading 24 lines of `2` back off the
+    text page, the ROM under a random key/joystick exercise, a ][+, a PAL
+    machine, no Mockingboard with two joysticks, and a commercial Disk II
+    image with a swap at frame 900 (staged in `tests/roms-local`) - each
+    proving native == sandbox over 300-1500 frames, that the input shaped
+    the machine, that turbo is the same machine and the same second-half
+    pictures, that a savestate round-trip around every frame is lossless,
+    and that a NEW host finishes the run from a state saved half way; plus
+    the settings leg (NTSC 1640625/27379 vs PAL 2375075/47424 with more
+    cycles, and a ][+ is another machine). ~35 s.
+  - `waterbox/tests/run-frontend.sh`: 4/4 with the disk staged. Chimera
+    headless builds the same Main RAM (64K identical to the native
+    reference) from a bare image, `model=apple2plus` reaches the guest
+    through the frontend's config and is another machine, a hand-written
+    `.chimeraProject` with two disks in the `floppy1` slot opens headless
+    and matches its native reference, and the package's 67 bindings and 4
+    analog bindings become the frontend's defaults.
+  - The package: `waterbox/build-package.sh` ->
+    `build/Cores/applewin.chimeraCore` (core.wbx 4.5 MB, of which ~1 MB is
+    the embedded ROM table). A savestate is 2.4 MB (the 600x420 framebuffer
+    is the biggest part; the machine itself is 128K).
+  - A ProDOS hard disk image in slot 7 boots (a IIgs System 6 .2mg gets as
+    far as "GS/OS REQUIRES APPLE IIGS HARDWARE", which is the controller
+    and its firmware working).
+
+## Sharp edges hit
+
+- **A //e with no disk boots forever.** The Disk II boot ROM spins waiting
+  for a disk; the ROM-only machine needs Ctrl-Reset (the `Reset` button)
+  to reach Applesoft. The gate presses it at frame 60.
+- **Turbo cannot skip the renderer.** The NTSC renderer's scanner clock
+  (`g_nVideoClockVert/Horz`) is what a program reads on the floating bus
+  and at the VBL; running the CPU with `bVideoUpdate=false` (upstream's
+  full-speed mode) leaves it behind and upstream resyncs it from the cycle
+  count, a different machine on purpose. Turbo here only skips handing the
+  picture over; the machine digests stayed identical either way, but the
+  second-half pictures did not until the renderer ran regardless.
+- **Two rand()s.** glibc's and musl's differ; AppleWin draws Disk II
+  read noise and formatted-track bits from `rand()`. One generator,
+  defined by the driver and macro-pinned in `libwindows/wincompat.h`
+  (every upstream file includes it through `StdAfx.h`).
+- **The speaker's rate is not 44100.** Upstream rounds cycles-per-sample
+  to the integer 23 (`SetClksPerSpkrSample`), 44369 Hz at the NTSC clock,
+  and the Win32 build compensates by nudging the CPU's cycles per frame
+  from the DirectSound buffer level. The cycle count is untouchable here,
+  so the driver resamples instead (fixed-ratio linear, integer math).
+  The Mockingboard regulates its own sample count against the play
+  cursor, so its ring is read at exactly the frame's rate and it settles.
+- **Files are bottom-up and Win32.** The framebuffer is a DIB (row 0 at
+  the bottom); the disk images are read through `CreateFile`/`ReadFile`
+  with `GetFileAttributes` deciding write protection - a mounted image is
+  never reported read-only, or AppleWin would refuse the machine's writes.
+- **`Peripheral_Clock_*.cpp`** in upstream's tree is not in upstream's own
+  project file; it does not compile off Windows and nothing references it.
 
 ## Open
 
-- Lag detection needs one upstream hook (a call from `KeybReadData`/
-  `JoyReadButton`/`JoyReadPosition`): patch 0001.
-- The guest build, the gate (native == sandbox == rerecord == session), the
-  package, the frontend.
-- The ROMs are embedded from the submodule's `resource/` directory at
-  build time (`waterbox/gen-resources.py`), exactly as AppleWin's own
-  binary embeds them. They are Apple's; AppleWin has shipped them since
-  1994. Whether a chimera package may do the same is the user's call - the
-  alternative is firmware slots (one ROM per model, plus the Disk II and
-  peripheral card ROMs).
+- **The ROMs (user decision).** They are embedded from the submodule's
+  `resource/` directory at build time (`waterbox/gen-resources.py`),
+  exactly as AppleWin's own binary embeds and distributes them since 1994
+  (Apple's ROMs, plus the Disk II, SSC, Mockingboard, mouse and hard-disk
+  controller firmware, and the two Apple system disks AppleWin uses to
+  format new images). Whether a chimera package may do the same is the
+  user's call; the alternative is firmware slots (one machine ROM per
+  model, one video ROM, and the peripheral firmware), which the
+  `firmware` declaration and `GetResource` can carry without touching the
+  driver's structure.
 - The No-Slot Clock's date is the sandbox epoch (2017-05-27) plus emulated
   time; a setting for the boot date would let a project pick one.
 - Settings not yet exposed: CPU type override, Saturn/RamWorks memory,
-  the printer and clock cards, VidHD, the mouse card.
+  the printer and clock cards, VidHD, the mouse card, 13-sector Disk II
+  firmware, the SSC, custom F8 ROM.
+- Save data: the disk overlay lives in the savestate only; exporting a
+  written disk image (the save-data channel) is not wired.
+- Speed: ~740 fps native on this machine, unmeasured in the sandbox
+  beyond the gate's timings (1200 frames in 1.7 s through run-wbx).
+- `tests/roms-local` holds the commercial disks the gate and the frontend
+  gate use (gitignored); a freely redistributable Apple II disk for the
+  repository would let the CI run the disk legs.

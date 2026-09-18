@@ -137,6 +137,35 @@ else
 	report "settings:model" PASS "model=apple2plus matches its native reference and is another machine than the //e"
 fi
 
+# --- a PROJECT: the disks arrive through the slots file, in swap order ---
+disk2="$root/tests/roms-local/disk2.dsk"
+if [ -f "$disk2" ]; then
+	pframes=$frames
+	wd="$work/native.project"
+	rm -rf "$wd"; mkdir -p "$wd"
+	cp "$rom" "$wd/disk1.dsk"; cp "$disk2" "$wd/disk2.dsk"
+	printf '{"floppy1":["disk1.dsk","disk2.dsk"]}' > "$wd/slots"
+	"$rn" "$wd" --frames "$pframes" --dump-domain "Main RAM" "$work/native.project.ram.bin" > "$work/native.project.txt" 2>&1
+	# the project resolves its files beside itself
+	ln -sf "$rom" "$work/disk1.dsk"; ln -sf "$disk2" "$work/disk2.dsk"
+	python3 "$here/make-project.py" "$package" "$work/gate.chimeraProject" "$pframes" "floppy1=$rom" "floppy1=$disk2"
+	job="$work/job.project.txt"
+	printf 'frames=%s\nout=%s/project.ram.bin\nmeta=%s/project.meta.txt\nshot=%s/project.png\n' "$pframes" "$work" "$work" "$work" > "$job"
+	rm -f "$work/project.ram.bin" "$work/project.meta.txt"
+	( cd "$chimera_root" && MINIHAWK_JOB="$job" timeout 900 mono "$emu_exe" --headless \
+		"--config=$work/config.base.ini" "--project=$work/gate.chimeraProject" \
+		"--lua=$here/frontend-ram.lua" ) > "$work/project.log" 2>&1
+	if [ ! -f "$work/project.meta.txt" ] || ! grep -q "^status=OK" "$work/project.meta.txt"; then
+		report "project:frontend" FAIL "no OK meta (see tests/work/project.log)"
+	elif cmp -s "$work/native.project.ram.bin" "$work/project.ram.bin"; then
+		report "project:frontend" PASS "a hand-written project with two disks in drive 1: Main RAM identical to the native reference"
+	else
+		report "project:frontend" FAIL "Main RAM differs from the native reference"
+	fi
+else
+	report "project:frontend" SKIP "needs tests/roms-local/disk2.dsk"
+fi
+
 # --- the bindings the package ships must become the frontend's defaults ---
 python3 "$here/forget-controller.py" "$work/config.base.ini" "$work/config.keys.ini" "Apple II Keyboard and Joysticks"
 if run_frontend "keys" "$work/config.keys.ini" 1; then

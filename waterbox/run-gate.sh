@@ -51,6 +51,13 @@ else
 	report "wire:config==driver" FAIL "$(head -1 "$work/wire.txt")"
 fi
 
+# the disk-image write overlay, on its own
+if [ -x "$nat/test-fileapi" ] && "$nat/test-fileapi" "$work/fileapi.base" >"$work/fileapi.txt" 2>&1; then
+	report "fileapi:overlay" PASS "$(cat "$work/fileapi.txt")"
+else
+	report "fileapi:overlay" FAIL "$(head -1 "$work/fileapi.txt" 2>/dev/null)"
+fi
+
 # name frames settings slots(json) extra-args...
 # "basic": the ROM alone; Reset out of the disk-boot wait, then a program
 # typed at the prompt, which the text-page check reads back.
