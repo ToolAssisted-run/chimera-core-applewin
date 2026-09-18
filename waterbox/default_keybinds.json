@@ -1,0 +1,109 @@
+{
+  "_comment": [
+    "Default bindings for the Apple II controller: the keyboard 1:1 (Open Apple on Alt, Solid Apple on Right Alt, Delete on Backspace, Reset on F12),",
+    "joystick 1 on the first pad's stick and buttons, joystick 2 on the second pad. The disk swaps ship unbound."
+  ],
+  "AllTrollers": {
+    "Apple II Keyboard and Joysticks": {
+      "Reset": "F12",
+      "Key Escape": "Escape",
+      "Key 1": "Number1",
+      "Key 2": "Number2",
+      "Key 3": "Number3",
+      "Key 4": "Number4",
+      "Key 5": "Number5",
+      "Key 6": "Number6",
+      "Key 7": "Number7",
+      "Key 8": "Number8",
+      "Key 9": "Number9",
+      "Key 0": "Number0",
+      "Key Minus": "Minus",
+      "Key Equals": "Equals",
+      "Key Delete": "Backspace, Delete",
+      "Key Tab": "Tab",
+      "Key Q": "Q",
+      "Key W": "W",
+      "Key E": "E",
+      "Key R": "R",
+      "Key T": "T",
+      "Key Y": "Y",
+      "Key U": "U",
+      "Key I": "I",
+      "Key O": "O",
+      "Key P": "P",
+      "Key LeftBracket": "LeftBracket",
+      "Key RightBracket": "RightBracket",
+      "Key Backslash": "Backslash",
+      "Key Control": "Ctrl, LeftCtrl, RightCtrl",
+      "Key A": "A",
+      "Key S": "S",
+      "Key D": "D",
+      "Key F": "F",
+      "Key G": "G",
+      "Key H": "H",
+      "Key J": "J",
+      "Key K": "K",
+      "Key L": "L",
+      "Key Semicolon": "Semicolon",
+      "Key Quote": "Apostrophe",
+      "Key Return": "Enter",
+      "Key Shift": "Shift, LeftShift, RightShift",
+      "Key Z": "Z",
+      "Key X": "X",
+      "Key C": "C",
+      "Key V": "V",
+      "Key B": "B",
+      "Key N": "N",
+      "Key M": "M",
+      "Key Comma": "Comma",
+      "Key Period": "Period",
+      "Key Slash": "Slash",
+      "Key CapsLock": "CapsLock",
+      "Key Open Apple": "Alt, LeftAlt",
+      "Key Solid Apple": "RightAlt",
+      "Key Space": "Space",
+      "Key Grave": "Backtick",
+      "Key Left": "Left",
+      "Key Right": "Right",
+      "Key Up": "Up",
+      "Key Down": "Down",
+      "P1 Button 1": "J1 B1, X1 A",
+      "P1 Button 2": "J1 B2, X1 B",
+      "P2 Button 1": "J2 B1, X2 A",
+      "Next Disk 1": "",
+      "Next Disk 2": ""
+    }
+  },
+  "AllTrollersAnalog": {
+    "Apple II Keyboard and Joysticks": {
+      "P1 Joystick X": {
+        "Value": "X1 LeftThumbX Axis",
+        "Mult": 1.0,
+        "Deadzone": 0.1,
+        "ButtonBindPositive": "",
+        "ButtonBindNegative": ""
+      },
+      "P1 Joystick Y": {
+        "Value": "X1 LeftThumbY Axis",
+        "Mult": -1.0,
+        "Deadzone": 0.1,
+        "ButtonBindPositive": "",
+        "ButtonBindNegative": ""
+      },
+      "P2 Joystick X": {
+        "Value": "X2 LeftThumbX Axis",
+        "Mult": 1.0,
+        "Deadzone": 0.1,
+        "ButtonBindPositive": "",
+        "ButtonBindNegative": ""
+      },
+      "P2 Joystick Y": {
+        "Value": "X2 LeftThumbY Axis",
+        "Mult": -1.0,
+        "Deadzone": 0.1,
+        "ButtonBindPositive": "",
+        "ButtonBindNegative": ""
+      }
+    }
+  }
+}

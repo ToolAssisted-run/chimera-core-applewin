@@ -1,0 +1,44 @@
+diff --git a/source/Joystick.cpp b/source/Joystick.cpp
+index e48aad9e..b43f75e1 100644
+--- a/source/Joystick.cpp
++++ b/source/Joystick.cpp
+@@ -596,9 +596,13 @@ static bool CheckButton1Pressed()
+ 	return pressed;
+ }
+ 
++// chimera: the frame looked at its input (lag detection)
++extern "C" void chimera_input_was_read(void) __attribute__((weak));
++
+ BYTE __stdcall JoyReadButton(WORD pc, WORD address, BYTE, BYTE, ULONG nExecutedCycles)
+ {
+ 	address &= 0xFF;
++	if (chimera_input_was_read) chimera_input_was_read();
+ 
+ 	if(joyinfo[joytype[0]] == DEVICE_JOYSTICK)
+ 		CheckJoystick0();
+@@ -679,6 +683,7 @@ static const double PDL_CNTR_INTERVAL = 2816.0 / 255.0;	// 11.04 (From KEGS)
+ BYTE __stdcall JoyReadPosition(WORD programcounter, WORD address, BYTE, BYTE, ULONG nExecutedCycles)
+ {
+ 	CpuCalcCycles(nExecutedCycles);
++	if (chimera_input_was_read) chimera_input_was_read();
+ 
+ 	bool bPdlCntrActive = g_nCumulativeCycles <= g_paddleInactiveCycle[address & 3];
+ 
+diff --git a/source/Keyboard.cpp b/source/Keyboard.cpp
+index 1e98391b..0da511e8 100644
+--- a/source/Keyboard.cpp
++++ b/source/Keyboard.cpp
+@@ -414,9 +414,13 @@ static bool IsAKD()
+ 
+ //===========================================================================
+ 
++// chimera: the frame looked at its input (lag detection)
++extern "C" void chimera_input_was_read(void) __attribute__((weak));
++
+ BYTE KeybReadData()
+ {
+ 	LogFileTimeUntilFirstKeyRead();
++	if (chimera_input_was_read) chimera_input_was_read();
+ 
+ 	BYTE res = ClipboardReadOrPeek(false);
+ 	if (res)

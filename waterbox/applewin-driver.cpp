@@ -775,6 +775,17 @@ int awdrv_init(char *error, size_t errorLen)
 
 		ReadSlot("floppy1", g_drives[0].media);
 		ReadSlot("floppy2", g_drives[1].media);
+		if (g_drives[0].media.empty())
+		{
+			/* no project slots (a bare image opened in the frontend): the
+			 * plain "rom" mount is the disk in drive 1 */
+			FILE *f = fopen("rom", "rb");
+			if (f)
+			{
+				fclose(f);
+				g_drives[0].media.push_back("rom");
+			}
+		}
 		std::vector<std::string> hard;
 		ReadSlot("harddisk", hard);
 		for (size_t i = 0; i < hard.size() && i < 2; i++) g_drives[2 + i].media.push_back(hard[i]);
@@ -980,14 +991,19 @@ void awdrv_frame(int render)
 
 	UpdateKeyboard();
 
-	/* upstream's ContinueExecution(), for exactly one frame of cycles */
+	/* upstream's ContinueExecution(), for exactly one frame of cycles. The
+	 * NTSC renderer always runs, drawn or not: its scanner clock is what a
+	 * program reads on the floating bus and at the VBL, so a frame without
+	 * it would be a different machine (upstream's full-speed mode resyncs
+	 * that clock from the cycle count and is a different machine on purpose).
+	 * Turbo only skips handing the picture over. */
 	const uint32_t frameCycles = NTSC_GetCyclesPerFrame();
 	const uint32_t batch = (uint32_t)(g_fCurrentCLK6502 / 1000.0); /* 1 ms */
 	uint32_t done = 0;
 	while (done < frameCycles)
 	{
 		const uint32_t want = frameCycles - done < batch ? frameCycles - done : batch;
-		const uint32_t executed = CpuExecute(want, render != 0);
+		const uint32_t executed = CpuExecute(want, true);
 		done += executed;
 		g_dwCyclesThisFrame += executed;
 		GetCardMgr().Update(executed);

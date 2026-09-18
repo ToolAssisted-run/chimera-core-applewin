@@ -1,0 +1,42 @@
+{
+  "package": "applewin",
+  "effectiveTerms": "GPL-2.0-or-later",
+  "commercialUse": "allowed under the GPL",
+  "note": "The built core combines this repository's integration (GPL-2.0-or-later) with AppleWin and the Apple II ROMs AppleWin embeds and distributes; the libwindows layer descends from audetto's AppleWin fork. libyaml (MIT), zlib and minizip (zlib licence) are AppleWin's own bundled copies.",
+  "components": [
+    {
+      "name": "chimera-core-applewin (integration)",
+      "license": "GPL-2.0-or-later",
+      "url": "https://github.com/ToolAssisted-run/chimera-core-applewin",
+      "commit": "{selfCommit}",
+      "file": "LICENSE",
+      "sourceUrl": "https://github.com/ToolAssisted-run/chimera-core-applewin/archive/{commit}.tar.gz"
+    },
+    {
+      "name": "AppleWin",
+      "license": "GPL-2.0-or-later",
+      "url": "https://github.com/AppleWin/AppleWin",
+      "commit": "{submodule:extern/AppleWin}",
+      "file": "extern/AppleWin/LICENSE",
+      "sourceUrl": "https://github.com/AppleWin/AppleWin/archive/{commit}.tar.gz"
+    },
+    {
+      "name": "libwindows (from audetto/AppleWin, source/linux/libwindows)",
+      "license": "GPL-2.0-or-later",
+      "url": "https://github.com/audetto/AppleWin",
+      "file": "waterbox/libwindows/README.md"
+    },
+    {
+      "name": "libyaml (bundled by AppleWin)",
+      "license": "MIT",
+      "url": "https://github.com/yaml/libyaml",
+      "file": "extern/AppleWin/libyaml/License"
+    },
+    {
+      "name": "zlib and minizip (bundled by AppleWin)",
+      "license": "Zlib",
+      "url": "https://zlib.net",
+      "file": "extern/AppleWin/zlib/README"
+    }
+  ]
+}
