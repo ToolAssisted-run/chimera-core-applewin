@@ -33,8 +33,8 @@ void OutputDebugString(const char *str)
 
 void ExitProcess(int status)
 {
-    std::ostringstream buffer("ExitProcess: ");
-    buffer << status;
+    std::ostringstream buffer;
+    buffer << "ExitProcess: " << status;
     throw std::runtime_error(buffer.str());
 }
 

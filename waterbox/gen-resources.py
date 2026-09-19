@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
-"""The ROMs and firmware the Windows build carries as resources, as a table.
+"""The firmware of AppleWin's own that the core carries as resources, as a table.
 
 AppleWin reaches its ROMs through FrameBase::GetResource(id, type, size): on
 Windows that is FindResource over the .rc file, and the Linux frontends embed
-the same files into the binary. This does the same for the core, reading the
-numeric ids from upstream's own resource.h and the same file list its
-Applewin.rc names under FIRMWARE and ROM (plus the three clone charsets the
-NTSC renderer asks for through GetBitmap), so the bytes in the core are the
-bytes upstream ships - nothing is copied into this repository.
+the same files into the binary. The core embeds only what AppleWin wrote
+itself; the rest is the project's firmware (waterbox.config). The numeric ids
+come from upstream's own resource.h and the bytes from its tree - nothing is
+copied into this repository.
 
 usage: gen-resources.py <AppleWin checkout> <out.cpp>
 """
@@ -17,42 +16,13 @@ import sys
 
 # resource id -> file under resource/ (or firmware/), as Applewin.rc has them
 RESOURCES = [
-    ("IDR_DISK2_13SECTOR_FW", "resource/DISK2-13sector.rom"),
-    ("IDR_DISK2_16SECTOR_FW", "resource/DISK2.rom"),
-    ("IDR_SSC_FW", "resource/SSC.rom"),
+    # only what AppleWin wrote itself: the hard-disk controller firmware
+    # (firmware/HDD, GPL with the rest of AppleWin). Apple's ROMs, the clones'
+    # and the card firmware are the project's to bring - see the `firmware`
+    # declarations in waterbox.config and FindResource in the driver.
     ("IDR_HDDRVR_FW", "resource/Hddrvr.bin"),
     ("IDR_HDDRVR_V2_FW", "resource/Hddrvr-v2.bin"),
     ("IDR_HDC_SMARTPORT_FW", "resource/HDC-SmartPort.bin"),
-    ("IDR_PRINTDRVR_FW", "resource/Parallel.rom"),
-    ("IDR_MOCKINGBOARD_D_FW", "resource/Mockingboard-D.rom"),
-    ("IDR_MOUSEINTERFACE_FW", "resource/MouseInterface.rom"),
-    ("IDR_THUNDERCLOCKPLUS_FW", "resource/ThunderClockPlus.rom"),
-    ("IDR_TKCLOCK_FW", "resource/TKClock.rom"),
-    ("IDR_BOOT_SECTOR", "firmware/BootSector/bootsector.bin"),
-    ("IDR_OS_DOS33", "firmware/OS/dos33c.bin"),
-    ("IDR_OS_PRODOS243", "firmware/OS/prodos243.bin"),
-    ("IDR_BOOT_SECTOR_PRODOS243", "firmware/OS/bootsector_prodos243.bin"),
-    ("IDR_FILE_BASIC17", "firmware/OS/basic17.system.bin"),
-    ("IDR_FILE_BITSY_BOOT", "firmware/OS/bitsy.boot.bin"),
-    ("IDR_FILE_BITSY_BYE", "firmware/OS/quit.system.bin"),
-    ("IDR_APPLE2_ROM", "resource/Apple2.rom"),
-    ("IDR_APPLE2_PLUS_ROM", "resource/Apple2_Plus.rom"),
-    ("IDR_APPLE2_JPLUS_ROM", "resource/Apple2_JPlus.rom"),
-    ("IDR_APPLE2E_ROM", "resource/Apple2e.rom"),
-    ("IDR_APPLE2E_ENHANCED_ROM", "resource/Apple2e_Enhanced.rom"),
-    ("IDR_PRAVETS_82_ROM", "resource/PRAVETS82.ROM"),
-    ("IDR_PRAVETS_8M_ROM", "resource/PRAVETS8M.ROM"),
-    ("IDR_PRAVETS_8C_ROM", "resource/PRAVETS8C.ROM"),
-    ("IDR_TK3000_2E_ROM", "resource/TK3000e.rom"),
-    ("IDR_BASE_64A_ROM", "resource/Base64A.rom"),
-    ("IDR_FREEZES_F8_ROM", "resource/Freezes_Non-autostart_F8_Rom.rom"),
-    ("IDR_APPLE2_VIDEO_ROM", "resource/Apple2_Video.rom"),
-    ("IDR_APPLE2_JPLUS_VIDEO_ROM", "resource/Apple2_JPlus_Video.rom"),
-    ("IDR_APPLE2E_ENHANCED_VIDEO_ROM", "resource/Apple2e_Enhanced_Video.rom"),
-    ("IDR_BASE64A_VIDEO_ROM", "resource/Base64A_German_Video.rom"),
-    ("IDB_CHARSET82", "resource/CHARSET82.bmp"),
-    ("IDB_CHARSET8M", "resource/CHARSET8M.bmp"),
-    ("IDB_CHARSET8C", "resource/CHARSET8C.bmp"),
 ]
 
 

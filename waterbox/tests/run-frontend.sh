@@ -40,6 +40,14 @@ chimera_root="$(cd "$chimera_root" && pwd)"
 emu_exe="$chimera_root/build/Chimera.exe"
 package="$chimera_root/build/Cores/applewin.chimeraCore"
 rn="$root/build/meson-native/run-native"
+# the ROMs a project brings as firmware, from the submodule where AppleWin
+# keeps them (the package carries none); the frontend takes them by id
+roms="$root/extern/AppleWin/resource"
+roms_into() { cp "$roms"/*.rom "$roms"/*.ROM "$roms"/CHARSET82.bmp "$roms"/CHARSET8M.bmp "$roms"/CHARSET8C.bmp "$1/"; }
+firmware_args=()
+for f in "$roms"/*.rom "$roms"/*.ROM "$roms"/CHARSET82.bmp "$roms"/CHARSET8M.bmp "$roms"/CHARSET8C.bmp; do
+	firmware_args+=("--firmware=$(basename "$f")=$f")
+done
 rom="$root/tests/roms-local/disk1.dsk"
 [ -f "$rom" ] || { echo "no tests/roms-local/disk1.dsk: nothing for the frontend to open, skipping"; exit 0; }
 [ -f "$emu_exe" ] || { echo "Chimera not built: $emu_exe" >&2; exit 1; }
@@ -91,7 +99,7 @@ run_frontend() {
 	rm -f "$work/$tag.ram.bin" "$work/$tag.meta.txt"
 	[ -n "$shot" ] && rm -f "$shot"
 	( cd "$chimera_root" && MINIHAWK_JOB="$job" timeout 900 mono "$emu_exe" --headless \
-		"--config=$cfg" "--core=$pkg" \
+		"--config=$cfg" "--core=$pkg" "${firmware_args[@]}" \
 		"--lua=$here/frontend-ram.lua" "$therom" ) > "$work/$tag.log" 2>&1
 	[ -f "$work/$tag.meta.txt" ] && grep -q "^status=OK" "$work/$tag.meta.txt"
 }
@@ -104,6 +112,7 @@ native_ram() {
 	mkdir -p "$wd"
 	# the frontend opens a bare image: it arrives as the plain "rom" mount
 	cp "$rom" "$wd/rom"
+	roms_into "$wd"
 	[ -n "$settings" ] && printf '%s' "$settings" > "$wd/settings"
 	"$rn" "$wd" --frames "$frames" --dump-domain "Main RAM" "$work/native.$tag.ram.bin" \
 		> "$work/native.$tag.txt" 2>&1
@@ -143,7 +152,7 @@ if [ -f "$disk2" ]; then
 	pframes=$frames
 	wd="$work/native.project"
 	rm -rf "$wd"; mkdir -p "$wd"
-	cp "$rom" "$wd/disk1.dsk"; cp "$disk2" "$wd/disk2.dsk"
+	cp "$rom" "$wd/disk1.dsk"; cp "$disk2" "$wd/disk2.dsk"; roms_into "$wd"
 	printf '{"floppy1":["disk1.dsk","disk2.dsk"]}' > "$wd/slots"
 	"$rn" "$wd" --frames "$pframes" --dump-domain "Main RAM" "$work/native.project.ram.bin" > "$work/native.project.txt" 2>&1
 	# the project resolves its files beside itself
@@ -153,7 +162,7 @@ if [ -f "$disk2" ]; then
 	printf 'frames=%s\nout=%s/project.ram.bin\nmeta=%s/project.meta.txt\nshot=%s/project.png\n' "$pframes" "$work" "$work" "$work" > "$job"
 	rm -f "$work/project.ram.bin" "$work/project.meta.txt"
 	( cd "$chimera_root" && MINIHAWK_JOB="$job" timeout 900 mono "$emu_exe" --headless \
-		"--config=$work/config.base.ini" "--project=$work/gate.chimeraProject" \
+		"--config=$work/config.base.ini" "--project=$work/gate.chimeraProject" "${firmware_args[@]}" \
 		"--lua=$here/frontend-ram.lua" ) > "$work/project.log" 2>&1
 	if [ ! -f "$work/project.meta.txt" ] || ! grep -q "^status=OK" "$work/project.meta.txt"; then
 		report "project:frontend" FAIL "no OK meta (see tests/work/project.log)"

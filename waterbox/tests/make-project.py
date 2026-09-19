@@ -62,6 +62,14 @@ def main():
     settings = {d["name"]: d.get("default") for d in cfg.get("settings", [])}
     settings = {k: v for k, v in settings.items() if v is not None}
 
+    # the firmware this machine needs, pinned as the wizard would pin it: every
+    # declaration whose condition the settings meet (the ROMs themselves come
+    # from --firmware on the command line, by id)
+    def needed(decl):
+        when = decl.get("requiredWhen")
+        return when is None or settings.get(when["setting"]) in when.get("in", [])
+    firmware = [{"id": d["id"], "sha1": d["sha1"]} for d in cfg.get("firmware", []) if needed(d)]
+
     project = {
         "id": "applewin-gate-01",
         "title": "Apple II through Chimera",
@@ -70,7 +78,7 @@ def main():
         "rerecords": 0,
         "files": files,
         "settings": settings,
-        "firmware": [],
+        "firmware": firmware,
         "coreCache": [],
         "input": log,
         "markers": [],

@@ -25,6 +25,14 @@ but the 6502's. The patch set to upstream is one hook, for lag detection.
   **two joysticks** (analog axes, the Apple's pushbuttons); Mockingboard in
   slot 4 (and 5) if wanted.
 - **Main RAM and Aux RAM** as memory domains.
+- **The ROMs are yours to supply.** The package carries nothing of Apple's
+  (nor the clones', nor the card firmware): a project brings the machine's
+  ROM, its video ROM, the Disk II boot PROM and, while the default printer
+  and serial cards are in, their firmware - each declared under the file
+  name AppleWin gives it (`Apple2e_Enhanced.rom`, `DISK2.rom`, ...), which
+  is how AppleWin's own source tree ships them under `resource/`. Only
+  AppleWin's hard-disk controller firmware, which AppleWin wrote, is
+  embedded.
 
 ## Building
 
@@ -42,6 +50,7 @@ sh waterbox/setup-guest.sh && ninja -C build/meson-guest core.wbx   # the guest
 ```
 
 Disk images for the gate go in `tests/roms-local` (gitignored); without
-one, the gate runs the machine from its ROM alone.
+one, the gate runs the machine from its ROM alone. The ROMs themselves the
+gate takes from the submodule, so it runs wherever the checkout does.
 
 Status and plan: `docs/PLAN.md`.

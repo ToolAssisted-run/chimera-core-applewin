@@ -147,16 +147,31 @@ and `ContinueExecution()` do, with the 6502 as the only clock:
 
 ## Open
 
-- **The ROMs (user decision).** They are embedded from the submodule's
-  `resource/` directory at build time (`waterbox/gen-resources.py`),
-  exactly as AppleWin's own binary embeds and distributes them since 1994
-  (Apple's ROMs, plus the Disk II, SSC, Mockingboard, mouse and hard-disk
-  controller firmware, and the two Apple system disks AppleWin uses to
-  format new images). Whether a chimera package may do the same is the
-  user's call; the alternative is firmware slots (one machine ROM per
-  model, one video ROM, and the peripheral firmware), which the
-  `firmware` declaration and `GetResource` can carry without touching the
-  driver's structure.
+- **The ROMs: DECIDED 2026-09-19, the package carries none but AppleWin's
+  own.** The rule is the one the user set for ares (2026-09-10): a core
+  carries no firmware but the emulator's. The first package embedded the
+  submodule's `resource/` directory whole, as AppleWin's binary has since
+  1994; now `gen-resources.py` embeds only the hard-disk controller
+  firmware (`firmware/HDD*`, AppleWin's own, GPL) and everything else is
+  the project's firmware, declared in `waterbox.config` under the file
+  name AppleWin gives it, mounted in the machine under that name, and
+  read by `FindResource` in the driver on upstream's first ask - upstream
+  is unchanged, it still calls `GetResource(id)`. Twenty declarations:
+  ten machine ROMs (one per model, `requiredWhen` the model), four video
+  ROMs and the three Pravets character-set bitmaps (by model; upstream
+  loads every character set at start whatever the model, so one it was
+  not given is a NULL it skips, and `GetBitmap` blanks a set the project
+  did not bring), the Disk II boot PROM (always: every machine here has
+  the card), and the SSC and printer firmware, needed while the new
+  `serial`/`printer` settings keep AppleWin's default cards in slots 2 and
+  1 - a user without those two ROMs takes the cards out instead. An
+  enhanced //e with a disk therefore asks for five files. The 13-sector
+  Disk II firmware, the mouse and clock cards, the custom F8 ROM and the
+  system disks AppleWin formats new images with are not declared because
+  nothing here reaches them. The gate and the frontend gate feed the ROMs
+  from the submodule (`roms_into`, `--firmware id=path`), so CI still runs
+  every leg while the package stays clean - the property ares' console
+  BIOSes could not have.
 - The No-Slot Clock's date is the sandbox epoch (2017-05-27) plus emulated
   time; a setting for the boot date would let a project pick one.
 - Settings not yet exposed: CPU type override, Saturn/RamWorks memory,

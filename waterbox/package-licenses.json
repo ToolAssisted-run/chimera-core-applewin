@@ -2,7 +2,7 @@
   "package": "applewin",
   "effectiveTerms": "GPL-2.0-or-later",
   "commercialUse": "allowed under the GPL",
-  "note": "The built core combines this repository's integration (GPL-2.0-or-later) with AppleWin and the Apple II ROMs AppleWin embeds and distributes; the libwindows layer descends from audetto's AppleWin fork. libyaml (MIT), zlib and minizip (zlib licence) are AppleWin's own bundled copies.",
+  "note": "The built core combines this repository's integration (GPL-2.0-or-later) with AppleWin; the libwindows layer descends from audetto's AppleWin fork. libyaml (MIT), zlib and minizip (zlib licence) are AppleWin's own bundled copies. The package carries no ROM that is not AppleWin's own: the machine ROMs, video ROMs and card firmware are the project's firmware, supplied by the user; only AppleWin's hard-disk controller firmware (its own, GPL) is embedded.",
   "components": [
     {
       "name": "chimera-core-applewin (integration)",

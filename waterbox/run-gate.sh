@@ -32,6 +32,15 @@ done
 
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
+
+# The package carries none of Apple's ROMs (nor the clones', nor the card
+# firmware): a project brings them as firmware, mounted under the file names
+# AppleWin gives them. The gate takes them from the submodule, where AppleWin
+# keeps them, so it runs anywhere the checkout does.
+roms="$root/extern/AppleWin/resource"
+roms_into() {
+	cp "$roms"/*.rom "$roms"/*.ROM "$roms"/CHARSET82.bmp "$roms"/CHARSET8M.bmp "$roms"/CHARSET8C.bmp "$1/"
+}
 digests() { grep -E '^(frames|vsync|videoHash|audioHash|lagFrames|cycles|domain\[)'; }
 # What a turbo run can be held to: everything except the whole-run video hash,
 # which a run that skipped the first half cannot possibly match - the second
@@ -82,6 +91,7 @@ for t in "${tests[@]}"; do
 
 	wd="$work/$name"
 	mkdir -p "$wd"
+	roms_into "$wd"
 	[ -d "$root/tests/roms-local" ] && cp "$root"/tests/roms-local/*.dsk "$wd/" 2>/dev/null
 	printf '%s' "$slots" > "$wd/slots"
 	printf '%s' "$settings" > "$wd/settings"
@@ -157,7 +167,7 @@ done
 # ---- the settings are machine choices and have to REACH the guest: a PAL
 # machine runs at 50 Hz with more cycles per frame; a ][+ is a different ROM.
 ntscRate="$(sed -n 's/^vsync=//p' "$work/basicExercise/../box.txt" 2>/dev/null)"
-wd="$work/rates"; mkdir -p "$wd"; printf '{}' > "$wd/slots"
+wd="$work/rates"; mkdir -p "$wd"; printf '{}' > "$wd/slots"; roms_into "$wd"
 printf '{"refreshRate":"60"}' > "$wd/settings"
 "$nat/run-wbx" "$gst/core.wbx" "$wd" --frames 120 --reset-at 60 2>/dev/null | digests > "$work/ntsc.txt"
 printf '{"refreshRate":"50"}' > "$wd/settings"

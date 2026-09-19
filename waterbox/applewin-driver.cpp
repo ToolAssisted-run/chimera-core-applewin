@@ -29,6 +29,8 @@
 #include "applewin-driver.h"
 #include "chimera-registry.h"
 
+#include <map>
+#include <vector>
 #include <emulibc.h>
 #include <waterbox_settings.h>
 #include <waterbox_slots.h>
@@ -104,17 +106,74 @@ extern "C" int64_t chimera_emulated_epoch_seconds(void)
 }
 
 /* ---------------------------------------------------------------------------
- * The embedded resources (waterbox/gen-resources.py).
+ * The resources. Upstream reaches its ROMs through FrameBase::GetResource by
+ * numeric id; the Windows build embeds them all. This core embeds only what
+ * AppleWin wrote itself (the hard-disk controller firmware,
+ * waterbox/gen-resources.py). Everything else - Apple's machine and video
+ * ROMs, the clones', the card firmware - is somebody else's and comes as the
+ * project's firmware: declared in waterbox.config by the file name AppleWin
+ * gives it, mounted in the machine under that name, read here once. What
+ * the project did not bring is a NULL, which upstream takes as "no such ROM"
+ * (a video ROM for another model is simply not loaded).
  */
 struct ChimeraResource { uint16_t id; uint32_t size; const uint8_t *data; };
 extern const ChimeraResource chimera_resources[];
 extern const size_t chimera_resource_count;
 
+static const struct { WORD id; const char *name; } kFirmwareFiles[] = {
+	{ IDR_APPLE2_ROM, "Apple2.rom" },
+	{ IDR_APPLE2_PLUS_ROM, "Apple2_Plus.rom" },
+	{ IDR_APPLE2_JPLUS_ROM, "Apple2_JPlus.rom" },
+	{ IDR_APPLE2E_ROM, "Apple2e.rom" },
+	{ IDR_APPLE2E_ENHANCED_ROM, "Apple2e_Enhanced.rom" },
+	{ IDR_PRAVETS_82_ROM, "PRAVETS82.ROM" },
+	{ IDR_PRAVETS_8M_ROM, "PRAVETS8M.ROM" },
+	{ IDR_PRAVETS_8C_ROM, "PRAVETS8C.ROM" },
+	{ IDR_TK3000_2E_ROM, "TK3000e.rom" },
+	{ IDR_BASE_64A_ROM, "Base64A.rom" },
+	{ IDR_APPLE2_VIDEO_ROM, "Apple2_Video.rom" },
+	{ IDR_APPLE2_JPLUS_VIDEO_ROM, "Apple2_JPlus_Video.rom" },
+	{ IDR_APPLE2E_ENHANCED_VIDEO_ROM, "Apple2e_Enhanced_Video.rom" },
+	{ IDR_BASE64A_VIDEO_ROM, "Base64A_German_Video.rom" },
+	{ IDB_CHARSET82, "CHARSET82.bmp" },
+	{ IDB_CHARSET8M, "CHARSET8M.bmp" },
+	{ IDB_CHARSET8C, "CHARSET8C.bmp" },
+	{ IDR_DISK2_16SECTOR_FW, "DISK2.rom" },
+	{ IDR_SSC_FW, "SSC.rom" },
+	{ IDR_PRINTDRVR_FW, "Parallel.rom" },
+};
+
+/* the firmware files read so far, kept for the machine's life (upstream
+ * keeps the pointer it is handed) */
+static std::map<WORD, std::vector<uint8_t>> g_firmwareRead;
+static std::string g_lastMessage;
+static std::map<WORD, ChimeraResource> g_firmwareResources;
+
 static const ChimeraResource *FindResource(WORD id)
 {
 	for (size_t i = 0; i < chimera_resource_count; i++)
 		if (chimera_resources[i].id == id) return &chimera_resources[i];
-	return nullptr;
+	auto known = g_firmwareResources.find(id);
+	if (known != g_firmwareResources.end()) return known->second.data ? &known->second : nullptr;
+	const char *name = nullptr;
+	for (const auto &f : kFirmwareFiles)
+		if (f.id == id) name = f.name;
+	if (!name) return nullptr;
+	ChimeraResource &res = g_firmwareResources[id];
+	res = { id, 0, nullptr };
+	FILE *f = fopen(name, "rb");
+	if (!f)
+	{
+		fprintf(stderr, "[applewin] firmware %s: the project did not bring it\n", name);
+		return nullptr;
+	}
+	std::vector<uint8_t> &bytes = g_firmwareRead[id];
+	uint8_t buf[4096];
+	for (size_t n; (n = fread(buf, 1, sizeof buf, f)) > 0;) bytes.insert(bytes.end(), buf, buf + n);
+	fclose(f);
+	res.size = (uint32_t)bytes.size();
+	res.data = bytes.data();
+	return &res;
 }
 
 /* ---------------------------------------------------------------------------
@@ -348,6 +407,11 @@ public:
 	int FrameMessageBox(LPCSTR text, LPCSTR caption, UINT type) override
 	{
 		fprintf(stderr, "[applewin] %s: %s\n", caption ? caption : "", text ? text : "");
+		/* what upstream last said, for the sentence Init fails with: an
+		 * ExitProcess follows a message box, and the box is the reason */
+		g_lastMessage = text ? text : "";
+		for (char &c : g_lastMessage) if (c == '\n' || c == '\r') c = ' ';
+		while (g_lastMessage.find("  ") != std::string::npos) g_lastMessage.erase(g_lastMessage.find("  "), 1);
 		/* a question is answered the way that changes nothing */
 		if ((type & 0xF) == MB_YESNO || (type & 0xF) == MB_YESNOCANCEL) return IDNO;
 		if ((type & 0xF) == MB_OKCANCEL) return IDCANCEL;
@@ -359,7 +423,14 @@ public:
 	void GetBitmap(WORD id, LONG cb, LPVOID bits) override
 	{
 		const ChimeraResource *res = FindResource(id);
-		if (!res) throw std::runtime_error("no bitmap resource " + std::to_string(id));
+		if (!res)
+		{
+			/* a clone's character set the project did not bring: blank glyphs
+			 * for a machine this project is not (upstream loads all three at
+			 * start whatever the model) */
+			memset(bits, 0, (size_t)cb);
+			return;
+		}
 		const uint8_t *b = res->data;
 		if (res->size < 54 || b[0] != 'B' || b[1] != 'M') throw std::runtime_error("bad bitmap resource");
 		auto u32 = [&](size_t at) { return (uint32_t)b[at] | ((uint32_t)b[at + 1] << 8) | ((uint32_t)b[at + 2] << 16) | ((uint32_t)b[at + 3] << 24); };
@@ -394,7 +465,7 @@ public:
 		const ChimeraResource *res = FindResource(id);
 		if (!res || res->size != expectedSize)
 		{
-			fprintf(stderr, "[applewin] resource %u: %s\n", id, res ? "wrong size" : "missing");
+			if (res) fprintf(stderr, "[applewin] resource %u: %u bytes where %u were expected\n", id, res->size, expectedSize);
 			return nullptr;
 		}
 		return const_cast<BYTE *>(res->data);
@@ -726,6 +797,10 @@ static void FillRegistry(void)
 	const bool mb5 = !strcmp(s, "slot5") || !strcmp(s, "slot4and5");
 	chimera_registry_put((std::string(REG_CONFIG "\\" REG_CONFIG_SLOT) + "4").c_str(), REGVALUE_CARD_TYPE, (uint32_t)(mb4 ? CT_MockingboardC : CT_Empty));
 	chimera_registry_put((std::string(REG_CONFIG "\\" REG_CONFIG_SLOT) + "5").c_str(), REGVALUE_CARD_TYPE, (uint32_t)(mb5 ? CT_MockingboardC : CT_Empty));
+	SettingStr("printer", "slot1", s, sizeof(s));
+	chimera_registry_put((std::string(REG_CONFIG "\\" REG_CONFIG_SLOT) + "1").c_str(), REGVALUE_CARD_TYPE, (uint32_t)(!strcmp(s, "slot1") ? CT_GenericPrinter : CT_Empty));
+	SettingStr("serial", "slot2", s, sizeof(s));
+	chimera_registry_put((std::string(REG_CONFIG "\\" REG_CONFIG_SLOT) + "2").c_str(), REGVALUE_CARD_TYPE, (uint32_t)(!strcmp(s, "slot2") ? CT_SSC : CT_Empty));
 
 	SettingStr("memoryPattern", "ffff0000", s, sizeof(s));
 	g_nMemoryClearType = MemoryPatternFromSetting(s);
@@ -835,7 +910,10 @@ int awdrv_init(char *error, size_t errorLen)
 	}
 	catch (const std::exception &e)
 	{
-		snprintf(error, errorLen, "AppleWin could not build the machine: %s", e.what());
+		if (!strncmp(e.what(), "ExitProcess", 11) && !g_lastMessage.empty())
+			snprintf(error, errorLen, "AppleWin could not build the machine: %s", g_lastMessage.c_str());
+		else
+			snprintf(error, errorLen, "AppleWin could not build the machine: %s", e.what());
 		return 0;
 	}
 
