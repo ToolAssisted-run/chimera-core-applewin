@@ -1,6 +1,7 @@
 {
   "_comment": [
     "Default bindings for the Apple II controller: the keyboard 1:1 (Open Apple on Alt, Solid Apple on Right Alt, Delete on Backspace, Reset on F12),",
+    "the PC arrows on the //e's arrows - which the //e emits as Ctrl-H/U/K/J; a player who puts the arrows on the joystick axes should take them off Key Up/Down, or Prince of Persia's Ctrl-K/J mode switch fires on every jump,",
     "joystick 1 on the first pad's stick and buttons, joystick 2 on the second pad. The disk swaps ship unbound."
   ],
   "AllTrollers": {

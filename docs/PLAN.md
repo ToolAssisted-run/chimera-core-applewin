@@ -117,6 +117,22 @@ and `ContinueExecution()` do, with the 6502 as the only clock:
 
 ## Sharp edges hit
 
+- **The //e's Up arrow is Ctrl-K and Down is Ctrl-J (2026-09-19, user
+  report).** The keyboard emits $0B and $0A for them, and Prince of Persia
+  (like Lode Runner) takes Ctrl-K/Ctrl-J as "keyboard mode"/"joystick
+  mode". A player who binds the PC arrows to the joystick axes while the
+  default binding still puts them on `Key Up`/`Key Down` sends both at
+  once, and the first jump switches the game to keyboard mode: the
+  joystick then "has no effect" though the frontend shows it at 0/255.
+  Proven with the game's own disks through chimera-run and through the
+  headless frontend (movie playback and live Lua input alike): joystick X
+  at 255 sends the prince out of the room; after one Up-arrow press it no
+  longer does. The remedy is a binding, not code: arrows on either the
+  //e keys or the axes, not both. Documented in the README and the keybind
+  notes. Found on the way: chimera-run's "idle" input past the source
+  movie held every axis at 0 - a paddle hard up-left - rather than the
+  declared neutral (chimera fix, `ce_session_axis_neutral`).
+
 - **A //e with no disk boots forever.** The Disk II boot ROM spins waiting
   for a disk; the ROM-only machine needs Ctrl-Reset (the `Reset` button)
   to reach Applesoft. The gate presses it at frame 60.

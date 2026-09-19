@@ -23,7 +23,12 @@ but the 6502's. The patch set to upstream is one hook, for lag detection.
   the machine's writes go to an overlay that savestates carry.
 - **The keyboard as a controller**, key by key, with the IIe's auto-repeat;
   **two joysticks** (analog axes, the Apple's pushbuttons); Mockingboard in
-  slot 4 (and 5) if wanted.
+  slot 4 (and 5) if wanted. The PC's arrow keys are the //e's arrow keys by
+  default. If you bind them to the joystick axes instead, unbind them from
+  `Key Up`/`Key Down` too: on a //e, Up IS Ctrl-K and Down IS Ctrl-J, and a
+  game that switches between keyboard and joystick on those (Prince of
+  Persia, Lode Runner) will stop listening to the joystick the first time
+  you press Up.
 - **Main RAM and Aux RAM** as memory domains.
 - **The ROMs are yours to supply.** The package carries nothing of Apple's
   (nor the clones', nor the card firmware): a project brings the machine's
