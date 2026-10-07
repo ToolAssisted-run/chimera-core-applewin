@@ -39,6 +39,15 @@ but the 6502's. The patch set to upstream is one hook, for lag detection.
   AppleWin's hard-disk controller firmware, which AppleWin wrote, is
   embedded.
 
+## Using it in Chimera
+
+Chimera includes no cores and downloads none. Download
+`applewin-<version>.chimeraCore` from this repository's
+[Releases](https://github.com/ToolAssisted-run/chimera-core-applewin/releases)
+page, or build it, and put it in the `Cores` folder beside `Chimera.exe`.
+File > Core Manager lists that folder and can point Chimera at another. The
+same file works on Linux and on Windows.
+
 ## Building
 
 ```
@@ -47,6 +56,13 @@ meson setup build/meson-native && ninja -C build/meson-native       # the refere
 sh waterbox/setup-guest.sh && ninja -C build/meson-guest core.wbx   # the guest
 ./waterbox/build-package.sh                                          # applewin.chimeraCore
 ```
+
+As written, these expect a Chimera checkout at `~/chimera` with miniBox
+built, and this repository beside it; anywhere else, pass
+`-Dminibox_dir=<miniBox>`, `-m <miniBox>` and `-r <chimera>`. The package is
+written to that checkout's `build/Cores/`. [docs/BUILDING.md](docs/BUILDING.md)
+has every step; [AGENTS.md](AGENTS.md) is the short version for an AI coding
+agent.
 
 ## Gates
 
