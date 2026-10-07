@@ -6,7 +6,10 @@ A project is what Chimera actually hands the core: the files in their slots
 the machine's own button names. The disk in drive 1 arrives through the
 "slots" file, which the bare-image leg never exercises.
 
-usage: make-project.py <package> <out.chimeraProject> <frames> <slot=file> [<slot=file> ...]
+With no slot argument the machine has nothing in its drives: every slot
+declares min 0, and an Apple with empty drives is still an Apple.
+
+usage: make-project.py <package> <out.chimeraProject> <frames> [--set=<setting>=<value> ...] [<slot=file> ...]
 """
 import hashlib
 import json
@@ -55,12 +58,21 @@ def main():
     log = "[Input]\nLogKey:" + key + "\n" + "\n".join([row] * frames) + "\n[/Input]\n"
 
     files = []
+    chosen = {}
     for arg in sys.argv[4:]:
+        if arg.startswith("--set="):
+            name, value = arg[len("--set="):].split("=", 1)
+            chosen[name] = value
+            continue
         slot, path = arg.split("=", 1)
         files.append({"name": os.path.basename(path), "sha1": sha1(path), "slot": slot})
 
     settings = {d["name"]: d.get("default") for d in cfg.get("settings", [])}
     settings = {k: v for k, v in settings.items() if v is not None}
+    for name, value in chosen.items():
+        if name not in settings:
+            sys.exit("make-project.py: the package declares no setting named " + name)
+        settings[name] = value
 
     # the firmware this machine needs, pinned as the wizard would pin it: every
     # declaration whose condition the settings meet (the ROMs themselves come

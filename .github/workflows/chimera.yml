@@ -2,10 +2,9 @@ name: chimera waterbox core
 
 # The core as Chimera ships it: a sandboxed core.wbx package. The core gate
 # needs no disk image: the Apple's ROM boots to Applesoft and a typed program
-# is a program. The frontend gate needs a disk image, which is commercial and
-# not in the repository, so on a public runner it reports itself skipped and
-# the package is published on the strength of the core gate and a package
-# build that installs into Chimera.
+# is a program. The frontend gate opens a project with nothing in its drives,
+# which every slot allows, so it runs here too; the legs over a booted disk
+# need an image that is commercial and not in the repository, and say SKIP.
 
 on:
   pull_request:
@@ -113,13 +112,12 @@ jobs:
 
   frontend-gate:
     # The other half: the package running inside the real frontend (Chimera
-    # headless under Mono + Xvfb, through the generic waterbox adapter). With
-    # a disk image staged in tests/roms-local (commercial: never on a public
-    # runner, where this gate reports itself skipped) the emulated Main RAM
-    # must match the native reference, a setting must arrive through the
-    # frontend's config, a hand-written project must open, and the package's
-    # default keybinds must become the frontend's. The package build itself
-    # runs either way.
+    # headless under Mono + Xvfb, through the generic waterbox adapter). A
+    # hand-written project with empty drives must open and build the Main RAM
+    # the native reference builds, a setting must arrive through a project,
+    # and the package's default keybinds must become the frontend's. The same
+    # claims over a booted disk need an image staged in tests/roms-local
+    # (commercial: never on a public runner), and those legs say SKIP here.
     name: frontend gate (Chimera)
     runs-on: ubuntu-latest
     timeout-minutes: 120

@@ -100,7 +100,9 @@ and `ContinueExecution()` do, with the 6502 as the only clock:
     and that a NEW host finishes the run from a state saved half way; plus
     the settings leg (NTSC 1640625/27379 vs PAL 2375075/47424 with more
     cycles, and a ][+ is another machine). ~35 s.
-  - `waterbox/tests/run-frontend.sh`: 4/4 with the disk staged. Chimera
+  - `waterbox/tests/run-frontend.sh`: 6/6 with the disks staged, 3 passed
+    and 3 skipped without (a project with empty drives, a setting through a
+    project and the keybinds need no disk, and are what CI runs). Chimera
     headless builds the same Main RAM (64K identical to the native
     reference) from a bare image, `model=apple2plus` reaches the guest
     through the frontend's config and is another machine, a hand-written

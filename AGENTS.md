@@ -94,10 +94,10 @@ The frontend gate runs the package inside a built Chimera:
 
     ./waterbox/tests/run-frontend.sh --chimera-root <chimera>
 
-It needs `tests/roms-local/disk1.dsk` and `disk2.dsk`, Chimera built,
-`mono` and `Xvfb`. Without `disk1.dsk` it prints that it is skipping and
-exits 0: that is not a pass. A public runner has no disk image, so CI
-skips it every time; it only really runs on a machine that has the disks.
+It needs Chimera built, `mono` and `Xvfb`. Three legs run with no disk
+(a project with empty drives, a setting through a project, the keybinds),
+and CI runs those. Three more need `tests/roms-local/disk1.dsk` and
+`disk2.dsk` and say SKIP without them; `--no-disk` runs it as CI does.
 `docs/BUILDING.md` has the Chimera build commands.
 
 Both gate scripts are bash: run them directly, not through `sh`.

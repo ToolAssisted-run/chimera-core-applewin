@@ -229,16 +229,13 @@ non-zero on any failure.
 
     ./waterbox/tests/run-frontend.sh --chimera-root <chimera>
 
-Usage: `./run-frontend.sh [--chimera-root <path>] [--frames N]` (300 frames
-by default). It runs the installed package inside Chimera, headless, under
-Mono.
+Usage: `./run-frontend.sh [--chimera-root <path>] [--frames N] [--no-disk]`
+(300 frames by default). It runs the installed package inside Chimera,
+headless, under Mono. `--no-disk` runs it as a public runner does, whatever
+is in `tests/roms-local`.
 
 It needs:
 
-- `tests/roms-local/disk1.dsk`, a disk image of your own. Without it the
-  script says there is nothing for the frontend to open, that it is
-  skipping, and exits 0. That is a skip, not a pass.
-- `tests/roms-local/disk2.dsk` for the project leg.
 - A built Chimera at `<chimera>` (`build/Chimera.exe`), built as the
   workflow builds it:
 
@@ -254,17 +251,20 @@ It needs:
 - `mono`, `python3`, and `Xvfb` when `DISPLAY` is not set: the script then
   starts its own display. With `DISPLAY` set it uses that one.
 
-What it proves: Chimera builds the same Main RAM as the native reference
-from a bare disk image (`disk:frontend`); `model=apple2plus` reaches the
-guest through the frontend's config and is another machine
-(`settings:model`); a hand-written `.chimeraProject` with two disks in
-drive 1 opens and matches (`project:frontend`); the package's default
-keybinds become the frontend's (`keybinds`). It writes its work files to
-`waterbox/tests/work/`.
+Three legs need no disk, and they are what a public runner runs: a
+hand-written `.chimeraProject` with nothing in its drives opens and builds
+the same Main RAM as the native reference (`rom:frontend`); a project's
+`model=apple2plus` reaches the guest and is another machine
+(`rom:settings`); the package's default keybinds become the frontend's
+(`keybinds`).
 
-On the public runner there is no disk image, so this gate reports itself
-skipped there. The package is published on the core gate and on a package
-build that installs into Chimera.
+Three more need disk images of your own in `tests/roms-local/`, and say SKIP
+without them: the same RAM claim over `disk1.dsk` opened as a bare image
+(`disk:frontend`), the setting through the frontend's config
+(`settings:model`), and, with `disk2.dsk` beside it, a project with two
+disks in drive 1 (`project:frontend`). A SKIP is not a failure; the last
+line counts passes, failures and skips apart, and the gate fails if nothing
+passed. It writes its work files to `waterbox/tests/work/`.
 
 ## Files the core needs at run time
 
@@ -326,9 +326,6 @@ savestates carry.
   the message gives the build command.
 - **`Syntax error: "(" unexpected`**: a gate script was run through `sh`.
   Run it directly.
-- **The frontend gate fails with `project:frontend SKIP`**: `disk1.dsk` is
-  staged and `disk2.dsk` is not. The script counts every result that is not
-  PASS as failed. Stage both disks.
 - **A moved miniBox.** `build/guest-cross.ini` holds absolute paths. Run
   `waterbox/setup-guest.sh` again after miniBox moves.
 - **Arrow keys and the joystick.** On a //e, Up is Ctrl-K and Down is
