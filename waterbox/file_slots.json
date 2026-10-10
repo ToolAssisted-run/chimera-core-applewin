@@ -1,5 +1,5 @@
 {
-  "_comment": "The core-declared file form for chimera's project wizard: two Disk II drives and a hard disk controller. Slot ids are what project manifests record.",
+  "_comment": "This file lists the kinds of file a project of this core can hold. Chimera's New Project window is built from it. There are two Disk II drives and a hard disk controller. A project file records its files under the slot ids used here.",
   "slots": [
     {
       "id": "floppy1",
@@ -14,7 +14,7 @@
         "woz",
         "2mg"
       ],
-      "help": "Disk images for drive 1 (slot 6): DOS-order .dsk/.do, ProDOS-order .po, nibble .nib, .woz, or a 140K .2mg. The machine boots the first; the order here is the swap order used by the Next Disk 1 input."
+      "help": "Disk images for drive 1 (slot 6). Accepted are DOS-order images (.dsk, .do), ProDOS-order images (.po), nibble images (.nib), .woz images and 140K .2mg images. The machine starts from the first one. The order here is the order the Next Disk 1 input goes through."
     },
     {
       "id": "floppy2",
@@ -29,7 +29,7 @@
         "woz",
         "2mg"
       ],
-      "help": "Disk images for drive 2. The first is in the drive at boot; Next Disk 2 cycles through the rest."
+      "help": "Disk images for drive 2. The first one is in the drive when the machine starts, and the Next Disk 2 input goes through the rest."
     },
     {
       "id": "harddisk",
@@ -41,7 +41,7 @@
         "2mg",
         "po"
       ],
-      "help": "Up to two ProDOS hard disk images on a controller in slot 7. Writes go to the machine's overlay, which savestates carry; the file itself is never changed."
+      "help": "Up to two ProDOS hard disk images, on a controller card in slot 7. What the machine writes is kept in memory and saved in savestates. The file itself is never changed."
     }
   ]
 }
