@@ -27,18 +27,10 @@ submodule `<chimera>/extern/chimera-common-minibox`.
 - The network, once: miniBox's C++ guest toolchain downloads the GCC source
   that matches the host `gcc` (about 84 MB) and builds libstdc++ for the
   guest from it. Nothing in this repository downloads anything.
-- For the frontend gate as well (the `frontend-gate` job), what a built
-  Chimera needs:
-
-      sudo apt-get install -y --no-install-recommends \
-        meson ninja-build build-essential cmake pkg-config python3 \
-        mono-complete xvfb \
-        libgl1-mesa-dev libx11-dev libxext-dev libasound2-dev
-
-  and the .NET SDK 8.0. The workflow gets it from `actions/setup-dotnet@v4`
-  with `dotnet-version: '8.0'`; by hand, Chimera's README gives
-
-      curl -sSL https://dot.net/v1/dotnet-install.sh | bash -s -- --channel 8.0
+- For the frontend gate as well (the `frontend-gate` job), Chimera built
+  with its window. Chimera's `tools/ci-chimera.sh` installs what that needs
+  (Qt 6.12, from Qt's own archives with aqt) and builds it; the workflow
+  keeps Qt in `~/qt` between runs.
 
 ## Get the sources
 
@@ -174,12 +166,12 @@ gets there as a file.
 
 - **A Chimera source checkout.** The cores folder is `<chimera>/build/Cores/`
   and `build-package.sh -r <chimera>` has already written the package there.
-  Start Chimera (`<chimera>/build/ChimeraMono.sh` on Linux).
+  Start Chimera (`<chimera>/build/meson-linux/source/ui/chimera` on Linux).
 - **A release bundle.** Copy `applewin.chimeraCore` into the `Cores` folder
-  beside `Chimera.exe`, or into the folder chosen in File > Core Manager >
-  Change folder... The same file serves a Linux and a Windows Chimera.
+  beside Chimera's program, or into the folder chosen in Tools > Core
+  Manager... > Change folder... The same file serves a Linux and a Windows Chimera.
 
-File > Core Manager lists the packages in that folder; Refresh List rescans
+Tools > Core Manager... lists the packages in that folder; Refresh List rescans
 it. A hand-built version reads as its commit followed by `local`.
 
 To use a published build instead, download `applewin-<version>.chimeraCore`
@@ -236,20 +228,15 @@ is in `tests/roms-local`.
 
 It needs:
 
-- A built Chimera at `<chimera>` (`build/Chimera.exe`), built as the
-  workflow builds it:
+- Chimera built at `<chimera>` with its window
+  (`build/meson-linux/source/ui/chimera`), as the workflow builds it:
 
-      cd <chimera>
-      meson setup build/meson-linux --prefix "$PWD/build" --libdir dll
-      meson compile -C build/meson-linux
-      meson install -C build/meson-linux
-      dotnet build source/gui/Chimera.sln -c Release /nodeReuse:false -p:UseSharedCompilation=false
+      <chimera>/tools/ci-chimera.sh
 
 - The package at `<chimera>/build/Cores/applewin.chimeraCore`.
 - `build/meson-native/run-native` (the workflow builds only that target in
   this job: `ninja -C build/meson-native run-native`).
-- `mono`, `python3`, and `Xvfb` when `DISPLAY` is not set: the script then
-  starts its own display. With `DISPLAY` set it uses that one.
+- `python3`. No display is needed: the window runs headless.
 
 Three legs need no disk, and they are what a public runner runs: a
 hand-written `.chimeraProject` with nothing in its drives opens and builds

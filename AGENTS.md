@@ -76,8 +76,8 @@ tree). It is for testing. CI stamps the commit through `CORE_VERSION`.
 Chimera ships no cores and downloads none. `build-package.sh -r <chimera>`
 writes the package into `<chimera>/build/Cores/`, which is the cores folder
 of a source checkout. For a release bundle, copy `applewin.chimeraCore`
-into the `Cores` folder beside `Chimera.exe` (or the folder set in File >
-Core Manager > Change folder...). File > Core Manager lists the folder;
+into the `cores` folder beside Chimera's program (or the folder set in Tools
+> Core Manager... > Change folder...). Tools > Core Manager... lists the folder;
 Refresh List rescans it. The same file works on Linux and on Windows.
 
 ## Test before you commit
@@ -94,7 +94,8 @@ The frontend gate runs the package inside a built Chimera:
 
     ./waterbox/tests/run-frontend.sh --chimera-root <chimera>
 
-It needs Chimera built, `mono` and `Xvfb`. Three legs run with no disk
+It needs Chimera built with its window (Chimera's `tools/ci-chimera.sh`
+builds it); the window runs headless and needs no display. Three legs run with no disk
 (a project with empty drives, a setting through a project, the keybinds),
 and CI runs those. Three more need `tests/roms-local/disk1.dsk` and
 `disk2.dsk` and say SKIP without them; `--no-disk` runs it as CI does.

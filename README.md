@@ -44,8 +44,8 @@ but the 6502's. The patch set to upstream is one hook, for lag detection.
 Chimera includes no cores and downloads none. Download
 `applewin-<version>.chimeraCore` from this repository's
 [Releases](https://github.com/ToolAssisted-run/chimera-core-applewin/releases)
-page, or build it, and put it in the `Cores` folder beside `Chimera.exe`.
-File > Core Manager lists that folder and can point Chimera at another. The
+page, or build it, and put it in the `cores` folder beside Chimera's program.
+Tools > Core Manager... lists that folder and can point Chimera at another. The
 same file works on Linux and on Windows.
 
 ## Building
