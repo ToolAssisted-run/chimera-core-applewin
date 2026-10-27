@@ -43,7 +43,7 @@ jobs:
   core-gate:
     # The fast half: the sandboxed core must emulate byte-identically to the
     # same sources built for the host, and survive a savestate round-trip
-    # around every frame. No .NET, Mono or X involved.
+    # around every frame. No display involved.
     name: core gate (native == sandbox == rerecord)
     runs-on: ubuntu-latest
     timeout-minutes: 60

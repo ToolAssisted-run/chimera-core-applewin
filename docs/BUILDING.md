@@ -223,7 +223,7 @@ non-zero on any failure.
 
 Usage: `./run-frontend.sh [--chimera-root <path>] [--frames N] [--no-disk]`
 (300 frames by default). It runs the installed package inside Chimera,
-headless, under Mono. `--no-disk` runs it as a public runner does, whatever
+headless. `--no-disk` runs it as a public runner does, whatever
 is in `tests/roms-local`.
 
 It needs:
