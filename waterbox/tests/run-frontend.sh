@@ -1,6 +1,6 @@
 #!/bin/bash
-# The frontend half of the gate: load the AppleWin package in Chimera (under
-# Mono, on a private Xvfb display), run the machine for a fixed number of
+# The frontend half of the gate: load the AppleWin package in Chimera's
+# window, run headless (it needs no display), run the machine for a fixed number of
 # frames with nothing pressed, and require its Main RAM - all 64K - to be
 # byte-identical to the native reference. Then prove a machine-shaping
 # setting arrives (model=apple2plus builds a ][+ that still matches ITS
@@ -45,7 +45,7 @@ fi
 	echo "chimera checkout not found; pass --chimera-root <path>" >&2; exit 1; }
 chimera_root="$(cd "$chimera_root" && pwd)"
 
-emu_exe="$chimera_root/build/Chimera.exe"
+chimera_exe="$chimera_root/build/meson-linux/source/ui/chimera"
 package="$chimera_root/build/Cores/applewin.chimeraCore"
 rn="$root/build/meson-native/run-native"
 # the ROMs a project brings as firmware, from the submodule where AppleWin
@@ -59,36 +59,18 @@ done
 rom="$root/tests/roms-local/disk1.dsk"
 have_disk=0
 [ "$no_disk" = 0 ] && [ -f "$rom" ] && have_disk=1
-[ -f "$emu_exe" ] || { echo "Chimera not built: $emu_exe" >&2; exit 1; }
+[ -x "$chimera_exe" ] || { echo "Chimera not built: $chimera_exe" >&2; exit 1; }
 [ -f "$package" ] || { echo "package not installed: $package (run ../build-package.sh)" >&2; exit 1; }
 [ -x "$rn" ] || { echo "native reference not built" >&2; exit 1; }
 
 work="$here/work"
 mkdir -p "$work"
 
-export LD_LIBRARY_PATH="$chimera_root/build/dll:$chimera_root/build:/usr/lib/x86_64-linux-gnu"
-export MONO_CRASH_NOFILE=1 MONO_WINFORMS_XIM_STYLE=disabled ALSOFT_DRIVERS=null
-xvfb_pid=""
-cleanup() { [ -n "$xvfb_pid" ] && kill "$xvfb_pid" 2>/dev/null; }
-trap cleanup EXIT
-if [ -z "${DISPLAY:-}" ]; then
-	command -v Xvfb >/dev/null || { echo "Xvfb not found (apt install xvfb)" >&2; exit 1; }
-	for n in 90 91 92 93 94 95 96; do
-		if [ ! -e "/tmp/.X11-unix/X$n" ]; then
-			Xvfb ":$n" -screen 0 640x480x24 -nolisten tcp & xvfb_pid=$!
-			export DISPLAY=":$n"; break
-		fi
-	done
-	sleep 1
-fi
-
-config="$work/config.ini"
-if [ ! -f "$config" ]; then
-	( cd "$chimera_root" && timeout 120 mono "$emu_exe" --headless "--config=$config" \
-		"--lua=$here/exit.lua" ) > "$work/bootstrap.log" 2>&1
-	[ -f "$config" ] || { echo "config bootstrap failed (see $work/bootstrap.log)" >&2; exit 1; }
-fi
-sed -i 's/"DispMethod": [0-9]/"DispMethod": 1/' "$config"
+# Chimera's window, run headless: the cores installed in the checkout, its
+# settings, cache and recovery files the run's own, and nothing carried over
+# from a Chimera installed on this machine
+export ALSOFT_DRIVERS=null CHIMERA_CORES_DIR="$chimera_root/build/Cores" CHIMERA_QT_CACHE="$work/qt-cache" CHIMERA_QT_RECOVERY="$work/qt-recovery" \
+	CHIMERA_QT_HASHES="$work/qt-file-hashes.txt" CHIMERA_QT_CHIMERA_SETTINGS="$work/no-chimera-config.ini"
 
 ok=0
 failed=0
@@ -110,7 +92,7 @@ run_frontend() {
 	[ -n "$shot" ] && rm -f "$shot"
 	local project
 	project="$(game_project "$tag" "$cfg" "$pkg" "$therom")" || { cp "$work/projects/$tag.make.log" "$work/$tag.log"; return 1; }
-	( cd "$chimera_root" && MINIHAWK_JOB="$job" timeout 900 mono "$emu_exe" --headless \
+	( cd "$chimera_root" && MINIHAWK_JOB="$job" timeout 900 "$chimera_exe" --headless \
 		"--config=$cfg" "--core=$pkg" "${firmware_args[@]}" \
 		"--lua=$here/frontend-ram.lua" "--project=$project" ) > "$work/$tag.log" 2>&1
 	[ -f "$work/$tag.meta.txt" ] && grep -q "^status=OK" "$work/$tag.meta.txt"
@@ -124,7 +106,7 @@ run_project() {
 	printf 'frames=%s\nout=%s/%s.ram.bin\nmeta=%s/%s.meta.txt\nshot=\n' "$nframes" "$work" "$tag" "$work" "$tag" > "$job"
 	rm -f "$work/$tag.ram.bin" "$work/$tag.meta.txt"
 	python3 "$here/make-project.py" "$package" "$work/$tag.chimeraProject" "$nframes" "$@" > "$work/$tag.log" 2>&1 || return 1
-	( cd "$chimera_root" && MINIHAWK_JOB="$job" timeout 900 mono "$emu_exe" --headless \
+	( cd "$chimera_root" && MINIHAWK_JOB="$job" timeout 900 "$chimera_exe" --headless \
 		"--config=$cfg" "--project=$work/$tag.chimeraProject" "${firmware_args[@]}" \
 		"--lua=$here/frontend-ram.lua" ) >> "$work/$tag.log" 2>&1
 	[ -f "$work/$tag.meta.txt" ] && grep -q "^status=OK" "$work/$tag.meta.txt"
@@ -149,7 +131,7 @@ native_ram() {
 # of its game with chimera-run --new-project, holding the settings
 # settings_config was given for the config it runs with.
 declare -A settings_of
-settings_config() { python3 "$here/settings-config.py" "$config" "$1" "$2"; settings_of["$1"]="$2"; }
+settings_config() { python3 "$here/settings-config.py" "$1" "$2"; settings_of["$1"]="$2"; }
 crun="$chimera_root/build/dll/chimera-run"
 game_project() { # tag, config, package, game: prints the project's path
 	local dir="$work/projects" settings="${settings_of[$2]:-}"
@@ -163,14 +145,14 @@ game_project() { # tag, config, package, game: prints the project's path
 		--settings "${settings:-"{}"}" "${fw[@]}" > "$dir/$1.make.log" 2>&1 && echo "$dir/$1.chimeraProject"
 }
 
-settings_config "$work/config.base.ini" '{}'
+settings_config "$work/settings.base.json" '{}'
 
 # --- the machine the frontend builds must be the one the gate signed off on ---
 # Nothing in the drives: the ROM waits for a disk that is not coming, and
 # sixty-four kilobytes of that wait are compared.
 if ! native_ram "rom" ""; then
 	report "rom:frontend" FAIL "native runner error (see tests/work/native.rom.txt)"
-elif ! run_project "rom" "$work/config.base.ini" "$frames"; then
+elif ! run_project "rom" "$work/settings.base.json" "$frames"; then
 	report "rom:frontend" FAIL "no OK meta (see tests/work/rom.log)"
 elif cmp -s "$work/native.rom.ram.bin" "$work/rom.ram.bin"; then
 	report "rom:frontend" PASS "$frames frames with empty drives, Main RAM identical to the native reference"
@@ -181,7 +163,7 @@ fi
 # --- a machine-shaping setting must reach the guest through a project ---
 if ! native_ram "romplus" '{"model":"apple2plus"}'; then
 	report "rom:settings" FAIL "native runner error (see tests/work/native.romplus.txt)"
-elif ! run_project "romplus" "$work/config.base.ini" "$frames" --set=model=apple2plus; then
+elif ! run_project "romplus" "$work/settings.base.json" "$frames" --set=model=apple2plus; then
 	report "rom:settings" FAIL "run did not report OK (see tests/work/romplus.log)"
 elif ! cmp -s "$work/native.romplus.ram.bin" "$work/romplus.ram.bin"; then
 	report "rom:settings" FAIL "][+ Main RAM differs from its native reference"
@@ -195,7 +177,7 @@ fi
 if [ "$have_disk" = 1 ]; then
 	if ! native_ram "base" "" disk; then
 		report "disk:frontend" FAIL "native runner error (see tests/work/native.base.txt)"
-	elif ! run_frontend "base" "$work/config.base.ini" "$frames" "$work/base.png"; then
+	elif ! run_frontend "base" "$work/settings.base.json" "$frames" "$work/base.png"; then
 		report "disk:frontend" FAIL "no OK meta (see tests/work/base.log)"
 	elif cmp -s "$work/native.base.ram.bin" "$work/base.ram.bin"; then
 		report "disk:frontend" PASS "$frames frames, Main RAM identical to the native reference"
@@ -204,10 +186,10 @@ if [ "$have_disk" = 1 ]; then
 	fi
 
 	# --- a machine-shaping setting must reach the guest through the frontend ---
-	settings_config "$work/config.plus.ini" '{"model": "apple2plus"}'
+	settings_config "$work/settings.plus.json" '{"model": "apple2plus"}'
 	if ! native_ram "plus" '{"model":"apple2plus"}' disk; then
 		report "settings:model" FAIL "native runner error (see tests/work/native.plus.txt)"
-	elif ! run_frontend "plus" "$work/config.plus.ini" "$frames"; then
+	elif ! run_frontend "plus" "$work/settings.plus.json" "$frames"; then
 		report "settings:model" FAIL "run did not report OK (see tests/work/plus.log)"
 	elif ! cmp -s "$work/native.plus.ram.bin" "$work/plus.ram.bin"; then
 		report "settings:model" FAIL "][+ Main RAM differs from its native reference"
@@ -232,8 +214,8 @@ if [ "$have_disk" = 1 ]; then
 		job="$work/job.project.txt"
 		printf 'frames=%s\nout=%s/project.ram.bin\nmeta=%s/project.meta.txt\nshot=%s/project.png\n' "$pframes" "$work" "$work" "$work" > "$job"
 		rm -f "$work/project.ram.bin" "$work/project.meta.txt"
-		( cd "$chimera_root" && MINIHAWK_JOB="$job" timeout 900 mono "$emu_exe" --headless \
-			"--config=$work/config.base.ini" "--project=$work/gate.chimeraProject" "${firmware_args[@]}" \
+		( cd "$chimera_root" && MINIHAWK_JOB="$job" timeout 900 "$chimera_exe" --headless \
+			"--config=$work/settings.base.json" "--project=$work/gate.chimeraProject" "${firmware_args[@]}" \
 			"--lua=$here/frontend-ram.lua" ) > "$work/project.log" 2>&1
 		if [ ! -f "$work/project.meta.txt" ] || ! grep -q "^status=OK" "$work/project.meta.txt"; then
 			report "project:frontend" FAIL "no OK meta (see tests/work/project.log)"
@@ -251,17 +233,21 @@ else
 	done
 fi
 
-# --- the bindings the package ships must become the frontend's defaults ---
-python3 "$here/forget-controller.py" "$work/config.base.ini" "$work/config.keys.ini" "Apple II Keyboard and Joysticks"
-if run_project "keys" "$work/config.keys.ini" 1; then
-	if python3 "$here/check-keybinds.py" "$work/config.keys.ini" \
-		"$wb/default_keybinds.json" "Apple II Keyboard and Joysticks" > "$work/keys.txt" 2>&1; then
-		report "keybinds" PASS "$(cat "$work/keys.txt")"
-	else
-		report "keybinds" FAIL "$(head -1 "$work/keys.txt")"
-	fi
-else
+# --- the bindings the package ships are the machine's when nobody changed them ---
+# (the window keeps only the keys a person changed; fresh settings have none)
+python3 "$here/make-project.py" "$package" "$work/keys.chimeraProject" 1 > "$work/keys.log" 2>&1
+printf 'out=%s/keys.controls.json\nmeta=%s/keys.meta.txt\n' "$work" "$work" > "$work/job.keys.txt"
+rm -f "$work/keys.controls.json" "$work/keys.meta.txt"
+( cd "$chimera_root" && MINIHAWK_JOB="$work/job.keys.txt" timeout 900 "$chimera_exe" --headless \
+	"--config=$work/settings.keys.json" "--project=$work/keys.chimeraProject" "${firmware_args[@]}" \
+	"--lua=$here/dump-controls.lua" ) >> "$work/keys.log" 2>&1
+if [ ! -f "$work/keys.meta.txt" ] || ! grep -q "^status=OK" "$work/keys.meta.txt"; then
 	report "keybinds" FAIL "run did not report OK (see tests/work/keys.log)"
+elif python3 "$here/check-keybinds.py" "$work/keys.controls.json" \
+	"$wb/default_keybinds.json" "Apple II Keyboard and Joysticks" > "$work/keys.txt" 2>&1; then
+	report "keybinds" PASS "$(cat "$work/keys.txt")"
+else
+	report "keybinds" FAIL "$(head -1 "$work/keys.txt")"
 fi
 
 echo
