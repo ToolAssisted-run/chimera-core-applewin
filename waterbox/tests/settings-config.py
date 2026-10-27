@@ -13,5 +13,6 @@ import sys
 
 out = {}
 if len(sys.argv) > 3:
-    out["cores.chosenFirmware"] = {"AppleWin": json.loads(sys.argv[3])}
+    # kept by the window as JSON text, as all its settings that hold JSON are
+    out["cores.chosenFirmware"] = json.dumps({"AppleWin": json.loads(sys.argv[3])})
 json.dump(out, open(sys.argv[1], "w"), indent=2)
