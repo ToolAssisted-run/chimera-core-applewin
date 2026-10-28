@@ -3,7 +3,7 @@
   "slots": [
     {
       "id": "floppy1",
-      "title": "Disk II drive 1",
+      "title": "slot.floppy1",
       "min": 0,
       "max": -1,
       "formats": [
@@ -14,11 +14,11 @@
         "woz",
         "2mg"
       ],
-      "help": "Disk images for drive 1 (slot 6). Accepted are DOS-order images (.dsk, .do), ProDOS-order images (.po), nibble images (.nib), .woz images and 140K .2mg images. The machine starts from the first one. The order here is the order the Next Disk 1 input goes through."
+      "help": "slot.floppy1.help"
     },
     {
       "id": "floppy2",
-      "title": "Disk II drive 2",
+      "title": "slot.floppy2",
       "min": 0,
       "max": -1,
       "formats": [
@@ -29,11 +29,11 @@
         "woz",
         "2mg"
       ],
-      "help": "Disk images for drive 2. The first one is in the drive when the machine starts, and the Next Disk 2 input goes through the rest."
+      "help": "slot.floppy2.help"
     },
     {
       "id": "harddisk",
-      "title": "Hard disk",
+      "title": "slot.harddisk",
       "min": 0,
       "max": 2,
       "formats": [
@@ -41,7 +41,7 @@
         "2mg",
         "po"
       ],
-      "help": "Up to two ProDOS hard disk images, on a controller card in slot 7. What the machine writes is kept in memory and saved in savestates. The file itself is never changed."
+      "help": "slot.harddisk.help"
     }
   ]
 }

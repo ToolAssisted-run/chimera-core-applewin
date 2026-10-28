@@ -68,6 +68,11 @@
 #include <string>
 #include <vector>
 
+/* A text a person reads is a key of languages/en.json, each of its
+ * arguments after a TEXT_ARG (chimera docs/translations.md). TEXT_ARG is a
+ * string of its own so the byte after it is never read as more of its hex. */
+#define TEXT_ARG "\x1f"
+
 /* ---------------------------------------------------------------------------
  * The pinned generator behind rand() (libwindows/wincompat.h). A 31-bit LCG
  * of the C standard's own example: the values do not matter, their being the
@@ -432,14 +437,14 @@ public:
 			return;
 		}
 		const uint8_t *b = res->data;
-		if (res->size < 54 || b[0] != 'B' || b[1] != 'M') throw std::runtime_error("bad bitmap resource");
+		if (res->size < 54 || b[0] != 'B' || b[1] != 'M') throw std::runtime_error("error.bitmap");
 		auto u32 = [&](size_t at) { return (uint32_t)b[at] | ((uint32_t)b[at + 1] << 8) | ((uint32_t)b[at + 2] << 16) | ((uint32_t)b[at + 3] << 24); };
 		const uint32_t offset = u32(10);
 		const int32_t height = (int32_t)u32(22);
 		uint32_t imageSize = u32(34);
 		if (imageSize == 0) imageSize = res->size - offset;
 		if (height <= 0 || offset + imageSize > res->size || (LONG)imageSize > cb)
-			throw std::runtime_error("unexpected bitmap resource layout");
+			throw std::runtime_error("error.bitmap_layout");
 		const size_t stride = imageSize / height;
 		uint8_t *out = (uint8_t *)bits;
 		for (int32_t row = 0; row < height; row++)
@@ -911,9 +916,9 @@ int awdrv_init(char *error, size_t errorLen)
 	catch (const std::exception &e)
 	{
 		if (!strncmp(e.what(), "ExitProcess", 11) && !g_lastMessage.empty())
-			snprintf(error, errorLen, "AppleWin could not build the machine: %s", g_lastMessage.c_str());
+			snprintf(error, errorLen, "error.not_built" TEXT_ARG "%s", g_lastMessage.c_str());
 		else
-			snprintf(error, errorLen, "AppleWin could not build the machine: %s", e.what());
+			snprintf(error, errorLen, "error.not_built" TEXT_ARG "%s", e.what());
 		return 0;
 	}
 
